@@ -1,4 +1,4 @@
-PE html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fast Fax Food</title><style>
+<!DOCTYPE html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fast Fax Food</title><style>
 *{box-sizing:border-box;margin:0}:root{--r:#e63946;--k:#14181f;--m:#6b7280;--b:#f3f5f7;--l:#e2e6ea}
 body{font-family:system-ui,"PingFang HK","Noto Sans TC",sans-serif;background:var(--b);color:var(--k);padding-bottom:100px}
 button{border:0;font:inherit;cursor:pointer;border-radius:12px;padding:10px 16px;font-weight:700;background:var(--k);color:#fff;transition:.2s}button:hover{transform:translateY(-1px);box-shadow:0 6px 16px #0003}button:active{transform:scale(.94)}button:disabled{opacity:.5;pointer-events:none}
@@ -36,8 +36,8 @@ small{color:var(--m);display:block;margin-top:3px}
 <div class=md id=ap hidden><div><h3 style="margin-bottom:12px">商戶入駐申請</h3><input id=an placeholder=店名><input id=aph type=tel placeholder=聯絡電話><div class=row><button class=g2 onclick="ap.hidden=true">取消</button><button class=rd onclick=apply()>提交申請</button></div></div></div>
 <script type=module>
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,collection,addDoc,doc,onSnapshot,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-const db=getFirestore(initializeApp({apiKey:"AIzaSyDE5ph-uHazh6m0Q4ENeGirLHEI59Cpfhw",authDomain:"uspp1-cd038.firebaseapp.com",projectId:"uspp1-cd038",storageBucket:"uspp1-cd038.firebasestorage.app",messagingSenderId:"118206137592",appId:"1:118206137592:web:00879c764b12eb2e25270d"}));
+import {initializeFirestore,collection,addDoc,doc,onSnapshot,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const db=initializeFirestore(initializeApp({apiKey:"AIzaSyDE5ph-uHazh6m0Q4ENeGirLHEI59Cpfhw",authDomain:"uspp1-cd038.firebaseapp.com",projectId:"uspp1-cd038",storageBucket:"uspp1-cd038.firebasestorage.app",messagingSenderId:"118206137592",appId:"1:118206137592:web:00879c764b12eb2e25270d"}),{experimentalAutoDetectLongPolling:true});
 const F=10,S=["new","preparing","ready","delivering","done"],SL=["已下單","製作中","等待騎手","配送中","已送達"],$=i=>document.getElementById(i),
 esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])),
 hue=s=>[...String(s)].reduce((a,c)=>a+c.charCodeAt(0)*7,0)%360,
@@ -45,10 +45,11 @@ av=(n,z=48)=>`<div class=av style="width:${z}px;height:${z}px;font-size:${z/2.3}
 I=d=>`<svg width=18 height=18 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2.4 stroke-linecap=round stroke-linejoin=round>${d}</svg>`,
 bike=I('<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-8h4l4 8M10 9H8"/>'),
 toast=t=>{const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.append(d);setTimeout(()=>d.remove(),3300)};
+const er=e=>{console.error(e);toast("無法連接資料庫:"+({"permission-denied":"Firestore 規則拒絕存取","unavailable":"網絡連不上 Firebase","failed-precondition":"尚未建立 Firestore 資料庫","not-found":"尚未建立 Firestore 資料庫"}[e.code]||e.message))};
 let M=[],ld=0,cur,cart={},cartM,tab="h",q="",O=[],OD={},an=1;const P={};
 try{O=JSON.parse(localStorage.ffo||"[]")}catch{}
-onSnapshot(collection(db,"merchants"),s=>{M=s.docs.map(d=>({id:d.id,...d.data()})).filter(m=>m.status=="active");ld=1;draw()});
-const watch=id=>onSnapshot(doc(db,"orders",id),d=>{if(!d.exists())return;const o={id,...d.data()},p=OD[id];OD[id]=o;if(p&&p.status!=o.status)toast(o.mn+":"+SL[S.indexOf(o.status)]);draw()});O.forEach(watch);
+onSnapshot(collection(db,"merchants"),s=>{M=s.docs.map(d=>({id:d.id,...d.data()})).filter(m=>m.status=="active");ld=1;draw()},e=>{er(e);ld=1;draw()});
+const watch=id=>onSnapshot(doc(db,"orders",id),d=>{if(!d.exists())return;const o={id,...d.data()},p=OD[id];OD[id]=o;if(p&&p.status!=o.status)toast(o.mn+":"+SL[S.indexOf(o.status)]);draw()},er);O.forEach(watch);
 window.go=(t,m)=>{tab=t;cur=m;an=1;scrollTo(0,0);draw()};window.sq=v=>{q=v;draw()};
 const tot=()=>Object.values(cart).reduce((a,x)=>a+x.p*x.q,0),cnt=()=>Object.values(cart).reduce((a,x)=>a+x.q,0);
 function bar(){const c=cnt();$("bar").classList.toggle("s",c>0);$("bt").innerHTML=`<b>${c}</b> 件 · $${tot()}`;$("bt").classList.remove("pop");void $("bt").offsetWidth;$("bt").classList.add("pop")}
