@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fast Fax Food</title><style>
+*{box-sizing:border-box;margin:0}body{font-family:system-ui,"PingFang HK",sans-serif;background:#fff9e6;color:#14213d;padding-bottom:90px}
+@keyframes up{from{opacity:0;transform:translateY(18px)}}@keyframes ride{from{left:-60px}to{left:100%}}@keyframes pu{50%{opacity:.4}}
+header{background:#e8312f;color:#fff;padding:16px 18px 26px;position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:24px;font-weight:900;font-style:italic}header i{position:absolute;bottom:0;font-size:24px;animation:ride 5s linear infinite;font-style:normal}
+button{border:0;border-radius:10px;background:#ffc700;color:#14213d;padding:9px 14px;font-weight:800;cursor:pointer;transition:.15s}button:active{transform:scale(.9)}
+.w{max-width:720px;margin:auto;padding:14px}.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.c{background:#fff;border-radius:18px;padding:14px;box-shadow:0 3px 0 #14213d22;transition:.2s}.sh{cursor:pointer;text-align:center}.sh:hover{transform:translateY(-4px) rotate(-1deg)}.sh b{font-size:42px;display:block}
+.r{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee}.r span{font-size:26px;margin-right:8px}
+#bar{position:fixed;bottom:0;left:0;right:0;background:#14213d;color:#fff;padding:14px;display:flex;justify-content:space-between;align-items:center;transform:translateY(100%);transition:.3s}#bar.s{transform:none}
+.md{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center}.md.s{display:flex}.md>div{background:#fff;padding:18px;border-radius:18px;width:90%;max-width:380px;animation:up .3s}
+input{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:10px}.st{display:flex;gap:4px;margin:10px 0}.st i{flex:1;height:7px;border-radius:4px;background:#eee}.st i.on{background:#e8312f}.st i.on:last-child{animation:pu 1s infinite}
+</style></head><body>
+<header><h1>🍔 Fast Fax Food</h1><button onclick="go('o')">我的訂單</button><i>🛵💨</i></header>
+<div class=w id=app></div>
+<div id=bar><span id=bt></span><button onclick="md.classList.add('s')">結帳</button></div>
+<div class=md id=md><div><h3>確認訂單(運費 $10)</h3><input id=cn placeholder=姓名><input id=ph placeholder=電話><input id=ad placeholder=送餐地址><button onclick=place()>提交訂單</button> <button style="background:#eee" onclick="md.classList.remove('s')">取消</button></div></div>
+<div class=md id=ap><div><h3>商戶入駐申請</h3><input id=an placeholder=店名><input id=ae placeholder="店舖圖示(emoji)"><input id=aph placeholder=聯絡電話><button onclick=apply()>提交申請</button> <button style="background:#eee" onclick="ap.classList.remove('s')">取消</button></div></div>
+<script type=module>
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,collection,addDoc,doc,onSnapshot,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const db=getFirestore(initializeApp({apiKey:"AIzaSyDE5ph-uHazh6m0Q4ENeGirLHEI59Cpfhw",authDomain:"uspp1-cd038.firebaseapp.com",projectId:"uspp1-cd038",storageBucket:"uspp1-cd038.firebasestorage.app",messagingSenderId:"118206137592",appId:"1:118206137592:web:00879c764b12eb2e25270d"}));
+const F=10,S=["new","preparing","ready","delivering","done"],SL=["已下單","製作中","等待騎手","配送中","已送達"],$=i=>document.getElementById(i),
+esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let M=[],cur,cart={},cartM,tab="h",O=JSON.parse(localStorage.ffo||"[]"),OD={};
+onSnapshot(collection(db,"merchants"),s=>{M=s.docs.map(d=>({id:d.id,...d.data()})).filter(m=>m.status=="active");draw()});
+const watch=id=>onSnapshot(doc(db,"orders",id),d=>{if(d.exists()){OD[id]={id,...d.data()};draw()}});O.forEach(watch);
+window.go=(t,m)=>{tab=t;cur=m;draw()};
+const tot=()=>Object.values(cart).reduce((a,x)=>a+x.p*x.q,0),cnt=()=>Object.values(cart).reduce((a,x)=>a+x.q,0);
+function bar(){$("bar").classList.toggle("s",cnt()>0);$("bt").textContent=`🛒 ${cnt()} 件 · $${tot()}`}
+window.add=i=>{const m=M.find(x=>x.id==cur),x=m.menu[i];if(cartM!=cur){cart={};cartM=cur}cart[i]=cart[i]||{n:x.n,p:x.p,q:0};cart[i].q++;bar()};
+window.place=async()=>{if(!cn.value||!ph.value||!ad.value||!cnt())return alert("請填妥資料");
+const m=M.find(x=>x.id==cartM),r=await addDoc(collection(db,"orders"),{mid:m.id,mn:m.name,items:Object.values(cart),total:tot()+F,cn:cn.value,ph:ph.value,ad:ad.value,status:"new",t:serverTimestamp()});
+O.push(r.id);localStorage.ffo=JSON.stringify(O);watch(r.id);cart={};bar();md.classList.remove("s");go("o")};
+window.apply=async()=>{if(!an.value||!aph.value)return alert("請填店名及電話");await addDoc(collection(db,"merchants"),{name:an.value,e:ae.value||"🍽️",ph:aph.value,status:"pending",menu:[],t:serverTimestamp()});ap.classList.remove("s");alert("申請已提交,平台審批後會提供帳號密碼")};
+function draw(){const a=$("app");
+if(tab=="o"){const L=O.map(i=>OD[i]).filter(Boolean).reverse();a.innerHTML=`<p><button onclick="go('h')">← 返回</button></p><h2 style="margin:10px 0">我的訂單</h2>`+(L.map(o=>{const k=S.indexOf(o.status);return `<div class=c style="margin:10px 0"><b>${esc(o.mn)}</b> · $${o.total}<br><small>${o.items.map(i=>esc(i.n)+"×"+i.q).join("、")}</small><div class=st>${S.map((_,j)=>`<i class="${j<=k?"on":""}"></i>`).join("")}</div>${SL[k]}${k==3?" 🛵":""}${k==4?" ✅":""}${o.rn?" · 騎手 "+esc(o.rn):""}</div>`}).join("")||"<p>暫時沒有訂單</p>");return}
+if(cur){const m=M.find(x=>x.id==cur);if(!m){cur=null;return draw()}
+a.innerHTML=`<p><button onclick="go('h')">← 返回</button></p><h2 style="margin:10px 0">${m.e} ${esc(m.name)}</h2><div class=c>`+(m.menu.map((x,i)=>`<div class=r><div><span>${esc(x.e)}</span>${esc(x.n)} · $${x.p}</div><button onclick=add(${i})>+</button></div>`).join("")||"暫未有菜單")+"</div>";return}
+a.innerHTML=`<h2 style="margin:6px 0 12px">今日想食咩?</h2><div class=g>`+(M.map((m,i)=>`<div class="c sh" style="animation:up .5s ${i*.08}s both" onclick="go('h','${m.id}')"><b>${m.e}</b>${esc(m.name)}<br><small>${m.menu.length} 款餐點</small></div>`).join("")||"<p>暫時未有商戶</p>")+`</div><p style="margin-top:24px"><button onclick="ap.classList.add('s')">🏪 商戶入駐申請</button></p>`}
+draw();
+</script></body></html>
